@@ -5,221 +5,204 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --bg-dark: #1a1a1a;
-            --card-bg: #2d2d2d;
-            --accent-blue: #3498db;
-            --accent-orange: #e67e22;
-            --accent-green: #2ecc71;
-            --accent-red: #e74c3c;
-            --text-main: #ffffff;
-            --text-dim: #b3b3b3;
-        }
-
         body { 
-            font-family: 'Segoe UI', Roboto, sans-serif; 
-            background: var(--bg-dark); 
-            color: var(--text-main); 
+            font-family: 'Arial', sans-serif; 
+            background: #000000; 
+            color: #ffffff; 
             padding: 0; margin: 0; 
         }
 
-        /* Навігація */
+        /* Навігація - велика та контрастна */
         .tabs { 
-            display: flex; background: #111; 
+            display: flex; background: #1a1a1a; 
             position: sticky; top: 0; z-index: 100;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            border-bottom: 2px solid #333;
         }
         .tab { 
-            flex: 1; padding: 16px; text-align: center; 
-            cursor: pointer; font-weight: bold; font-size: 14px;
-            color: var(--text-dim); transition: 0.3s;
+            flex: 1; padding: 20px 10px; text-align: center; 
+            cursor: pointer; font-weight: 900; font-size: 16px;
+            color: #888; transition: 0.2s;
         }
         .tab.active { 
-            color: var(--accent-blue); 
-            border-bottom: 3px solid var(--accent-blue);
+            color: #00e5ff; 
+            border-bottom: 4px solid #00e5ff;
+            background: #222;
         }
 
-        /* Контент */
-        .content { padding: 20px; display: none; animation: fadeIn 0.3s; }
+        .content { padding: 20px; display: none; }
         .content.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* Інфо-панелі */
-        .total-display {
-            background: linear-gradient(135deg, var(--accent-blue), #2980b9);
-            padding: 20px; border-radius: 15px; text-align: center;
-            margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        /* Екрани з сумами */
+        .display {
+            padding: 25px; border-radius: 20px; text-align: center;
+            margin-bottom: 20px; border: 2px solid rgba(255,255,255,0.1);
         }
-        .total-display.orange { background: linear-gradient(135deg, var(--accent-orange), #d35400); }
-        .total-val { font-size: 28px; font-weight: 800; display: block; }
-        .total-label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.9; }
-
-        /* Картки та форми */
-        .card { 
-            background: var(--card-bg); border-radius: 12px; 
-            padding: 15px; margin-bottom: 15px;
-        }
-        input { 
-            width: 100%; box-sizing: border-box; padding: 14px; 
-            margin: 8px 0; border-radius: 10px; border: 1px solid #444; 
-            background: #222; color: #fff; font-size: 16px; outline: none;
-        }
-        input:focus { border-color: var(--accent-blue); }
+        .bg-blue { background: #003366; border-color: #00e5ff; }
+        .bg-orange { background: #663300; border-color: #ff9100; }
         
-        button { 
-            background: var(--accent-blue); color: #fff; border: none; 
-            padding: 15px; width: 100%; border-radius: 10px; 
-            font-weight: bold; font-size: 16px; cursor: pointer; transition: 0.2s;
-        }
-        button:active { transform: scale(0.98); }
+        .val { font-size: 36px; font-weight: 900; display: block; color: #fff; }
+        .lbl { font-size: 14px; text-transform: uppercase; color: #aaa; font-weight: bold; }
 
-        /* Списки */
-        .list-item { 
+        /* Картки та кнопки */
+        .card { background: #1a1a1a; border-radius: 15px; padding: 20px; margin-bottom: 15px; border: 1px solid #333; }
+        input { 
+            width: 100%; box-sizing: border-box; padding: 16px; 
+            margin: 10px 0; border-radius: 12px; border: 2px solid #444; 
+            background: #000; color: #fff; font-size: 18px; font-weight: bold;
+        }
+        input:focus { border-color: #00e5ff; outline: none; }
+        
+        .btn { 
+            border: none; padding: 18px; width: 100%; border-radius: 12px; 
+            font-weight: 900; font-size: 18px; cursor: pointer; color: #fff;
+            text-transform: uppercase;
+        }
+        .btn-blue { background: #0088ff; box-shadow: 0 4px 0 #0055aa; }
+        .btn-orange { background: #ff8800; box-shadow: 0 4px 0 #aa5500; }
+        .btn-green { background: #22cc33; box-shadow: 0 4px 0 #116611; }
+
+        /* Списки з видаленням */
+        .row { 
             display: flex; justify-content: space-between; align-items: center;
-            padding: 14px; background: #252525; border-radius: 10px; 
-            margin-bottom: 8px; border-left: 4px solid var(--accent-blue);
+            padding: 16px; background: #111; border-radius: 12px; 
+            margin-bottom: 10px; border-left: 6px solid #00e5ff;
         }
-        .item-info b { color: var(--accent-blue); }
-        .del-btn { 
-            color: var(--accent-red); font-size: 20px; 
-            width: 30px; text-align: center; cursor: pointer; 
-        }
+        .row-orange { border-left-color: #ff8800; }
+        .info { font-size: 18px; }
+        .info b { color: #00e5ff; }
+        .row-orange .info b { color: #ff8800; }
+        .del { color: #ff4444; font-size: 24px; font-weight: bold; width: 40px; text-align: right; }
 
-        /* Повідомлення про результат */
-        .res-box {
-            padding: 15px; border-radius: 12px; text-align: center;
-            margin-bottom: 20px; font-weight: bold; font-size: 18px;
+        /* Результати */
+        .res-banner {
+            padding: 20px; border-radius: 15px; text-align: center;
+            margin-bottom: 25px; font-size: 20px; font-weight: 900;
+            border: 3px solid;
         }
     </style>
 </head>
 <body>
     <div class="tabs">
-        <div class="tab active" onclick="openTab('tab-pool', this)">💰 БАНК</div>
-        <div class="tab" onclick="openTab('tab-spend', this)">🛒 ЧЕКИ</div>
-        <div class="tab" onclick="openTab('tab-res', this)">🏁 ЗВІТ</div>
+        <div class="tab active" onclick="tab('tab-p', this)">БАНК</div>
+        <div class="tab" onclick="tab('tab-e', this)">ЧЕКИ</div>
+        <div class="tab" onclick="tab('tab-r', this)">ЗВІТ</div>
     </div>
 
-    <!-- Вкладка 1: Банк -->
-    <div id="tab-pool" class="content active">
-        <div class="total-display">
-            <span class="total-label">Загальна каса</span>
-            <span id="pool-sum-top" class="total-val">0.00 грн</span>
+    <div id="tab-p" class="content active">
+        <div class="display bg-blue">
+            <span class="lbl">Зібрана каса</span>
+            <span id="sum-p" class="val">0.00 грн</span>
         </div>
         <div class="card">
-            <input type="text" id="pName" placeholder="Хто скинувся?">
-            <input type="number" id="pAmount" placeholder="Сума">
-            <button onclick="addP()">Додати в банк</button>
+            <input type="text" id="i-pn" placeholder="Ім'я">
+            <input type="number" id="i-pa" placeholder="Сума">
+            <button class="btn btn-blue" onclick="addP()">ДОДАТИ ГРОШІ</button>
         </div>
-        <div id="p-list"></div>
+        <div id="list-p"></div>
     </div>
 
-    <!-- Вкладка 2: Чеки -->
-    <div id="tab-spend" class="content">
-        <div class="total-display orange">
-            <span class="total-label">Всього витрачено</span>
-            <span id="exp-sum-top" class="total-val">0.00 грн</span>
+    <div id="tab-e" class="content">
+        <div class="display bg-orange">
+            <span class="lbl">Загальні витрати</span>
+            <span id="sum-e" class="val">0.00 грн</span>
         </div>
         <div class="card">
-            <input type="text" id="eDesc" placeholder="Що купили?">
-            <input type="number" id="eAmount" placeholder="Ціна">
-            <button onclick="addE()" style="background: var(--accent-orange);">Записати чек</button>
+            <input type="text" id="i-ed" placeholder="Назва товару">
+            <input type="number" id="i-ea" placeholder="Ціна">
+            <button class="btn btn-orange" onclick="addE()">ДОДАТИ ВИТРАТУ</button>
         </div>
-        <div id="e-list"></div>
+        <div id="list-e"></div>
     </div>
 
-    <!-- Вкладка 3: Звіт -->
-    <div id="tab-res" class="content">
-        <div id="res-header"></div>
-        <div id="res-details"></div>
-        <button onclick="sendData()" style="background: var(--accent-green); margin-top: 10px;">Надіслати у групу</button>
-        <button onclick="clearAll()" style="background: transparent; color: var(--accent-red); margin-top: 20px; border: 1px solid var(--accent-red);">Очистити все</button>
+    <div id="tab-r" class="content">
+        <div id="res-top"></div>
+        <div id="res-bot"></div>
+        <button class="btn btn-green" style="margin-top:20px" onclick="send()">ВІДПРАВИТИ В ТЕЛЕГРАМ</button>
+        <button onclick="clearAll()" style="background:none; border:none; color:#666; width:100%; margin-top:30px; font-weight:bold">ОЧИСТИТИ ВСЕ</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        let pool = JSON.parse(localStorage.getItem('p_v11')) || [];
-        let exp = JSON.parse(localStorage.getItem('e_v11')) || [];
+        let p = JSON.parse(localStorage.getItem('p_v12')) || [];
+        let e = JSON.parse(localStorage.getItem('e_v12')) || [];
 
-        function openTab(id, el) {
-            document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        function tab(id, el) {
+            document.querySelectorAll('.content, .tab').forEach(x => x.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             el.classList.add('active');
-            if(id === 'tab-res') calculate();
+            if(id === 'tab-r') calc();
         }
 
         function addP() {
-            const n = document.getElementById('pName'), a = document.getElementById('pAmount');
+            const n = document.getElementById('i-pn'), a = document.getElementById('i-pa');
             if(n.value && a.value) {
-                pool.push({n: n.value, a: parseFloat(a.value)});
+                p.push({n: n.value, a: parseFloat(a.value)});
                 save(); renderP(); n.value = ''; a.value = '';
             }
         }
 
         function addE() {
-            const d = document.getElementById('eDesc'), a = document.getElementById('eAmount');
+            const d = document.getElementById('i-ed'), a = document.getElementById('i-ea');
             if(d.value && a.value) {
-                exp.push({d: d.value, a: parseFloat(a.value)});
+                e.push({d: d.value, a: parseFloat(a.value)});
                 save(); renderE(); d.value = ''; a.value = '';
             }
         }
 
         function save() {
-            localStorage.setItem('p_v11', JSON.stringify(pool));
-            localStorage.setItem('e_v11', JSON.stringify(exp));
+            localStorage.setItem('p_v12', JSON.stringify(p));
+            localStorage.setItem('e_v12', JSON.stringify(e));
         }
 
         function renderP() {
-            let s = pool.reduce((acc, i) => acc + i.a, 0);
-            document.getElementById('pool-sum-top').innerText = s.toFixed(2) + ' грн';
-            document.getElementById('p-list').innerHTML = pool.map((x, i) => `
-                <div class="list-item">
-                    <div class="item-info"><b>${x.n}</b>: ${x.a} грн</div>
-                    <div class="del-btn" onclick="delP(${i})">✕</div>
+            let s = p.reduce((acc, x) => acc + x.a, 0);
+            document.getElementById('sum-p').innerText = s.toFixed(2) + ' грн';
+            document.getElementById('list-p').innerHTML = p.map((x, i) => `
+                <div class="row">
+                    <div class="info"><b>${x.n}</b>: ${x.a} грн</div>
+                    <div class="del" onclick="delP(${i})">✕</div>
                 </div>`).join('');
         }
 
         function renderE() {
-            let s = exp.reduce((acc, i) => acc + i.a, 0);
-            document.getElementById('exp-sum-top').innerText = s.toFixed(2) + ' грн';
-            document.getElementById('e-list').innerHTML = exp.map((x, i) => `
-                <div class="list-item" style="border-color: var(--accent-orange)">
-                    <div class="item-info"><b>${x.d}</b>: ${x.a} грн</div>
-                    <div class="del-btn" onclick="delE(${i})">✕</div>
+            let s = e.reduce((acc, x) => acc + x.a, 0);
+            document.getElementById('sum-e').innerText = s.toFixed(2) + ' грн';
+            document.getElementById('list-e').innerHTML = e.map((x, i) => `
+                <div class="row row-orange">
+                    <div class="info"><b>${x.d}</b>: ${x.a} грн</div>
+                    <div class="del" onclick="delE(${i})">✕</div>
                 </div>`).join('');
         }
 
-        function delP(i) { pool.splice(i, 1); save(); renderP(); }
-        function delE(i) { exp.splice(i, 1); save(); renderE(); }
-        function clearAll() { if(confirm('Видалити все?')) { pool=[]; exp=[]; save(); renderP(); renderE(); openTab('tab-pool', document.querySelectorAll('.tab')[0]); } }
+        function delP(i) { p.splice(i, 1); save(); renderP(); }
+        function delE(i) { e.splice(i, 1); save(); renderE(); }
+        function clearAll() { if(confirm('Видалити все?')) { p=[]; e=[]; save(); renderP(); renderE(); } }
 
-        function calculate() {
-            let tin = pool.reduce((s, i) => s + i.a, 0);
-            let tout = exp.reduce((s, i) => s + i.a, 0);
-            let header = document.getElementById('res-header');
-            let details = document.getElementById('res-details');
+        function calc() {
+            let tin = p.reduce((s, x) => s + x.a, 0);
+            let tout = e.reduce((s, x) => s + x.x || s + x.a, 0);
+            let h = document.getElementById('res-top'), b = document.getElementById('res-bot');
             let html = "";
 
             if (tin >= tout) {
-                let remains = tin - tout;
-                header.innerHTML = `<div class="res-box" style="background: rgba(46, 204, 113, 0.2); color: var(--accent-green); border: 1px solid var(--accent-green);">💰 Решта: ${remains.toFixed(2)} грн</div>`;
-                pool.forEach(x => {
-                    let koef = tin > 0 ? (x.a / tin) : 0;
-                    let userBack = remains * koef;
-                    html += `<div class="card">👤 <b>${x.n}</b> (здав ${x.a})<br>Повернути йому: <b style="color:var(--accent-green)">${userBack.toFixed(2)} грн</b></div>`;
+                let rem = tin - tout;
+                h.innerHTML = `<div class="res-banner" style="background:#004400; border-color:#22cc33; color:#22cc33">✅ РЕШТА: ${rem.toFixed(2)} грн</div>`;
+                p.forEach(x => {
+                    let back = rem * (x.a / tin);
+                    html += `<div class="card">👤 <b>${x.n}</b> (здав ${x.a})<br>Повернути йому: <b style="color:#22cc33; font-size:20px">${back.toFixed(2)} грн</b></div>`;
                 });
             } else {
                 let debt = tout - tin;
-                let perPerson = pool.length > 0 ? (debt / pool.length) : 0;
-                header.innerHTML = `<div class="res-box" style="background: rgba(231, 76, 60, 0.2); color: var(--accent-red); border: 1px solid var(--accent-red);">⚠️ Треба додати: ${debt.toFixed(2)} грн</div>`;
-                pool.forEach(x => {
-                    html += `<div class="card">👤 <b>${x.n}</b><br>Доплатити порівну: <b style="color:var(--accent-red)">${perPerson.toFixed(2)} грн</b></div>`;
+                let per = debt / p.length;
+                h.innerHTML = `<div class="res-banner" style="background:#440000; border-color:#ff4444; color:#ff4444">⚠️ ДОПЛАТИТИ: ${debt.toFixed(2)} грн</div>`;
+                p.forEach(x => {
+                    html += `<div class="card">👤 <b>${x.n}</b><br>Додати порівну: <b style="color:#ff4444; font-size:20px">${per.toFixed(2)} грн</b></div>`;
                 });
             }
-            details.innerHTML = html;
+            b.innerHTML = html;
         }
 
-        function sendData() { tg.sendData(JSON.stringify({p: pool, e: exp})); }
+        function send() { tg.sendData(JSON.stringify({p: p, e: e})); }
         renderP(); renderE();
         tg.expand();
     </script>
