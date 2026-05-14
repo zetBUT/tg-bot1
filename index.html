@@ -13,54 +13,71 @@
             --sec-bg: var(--tg-theme-secondary-bg-color, #f4f4f4);
         }
         body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 0; margin: 0; }
-        .tabs { display: flex; background: var(--sec-bg); border-bottom: 1px solid rgba(0,0,0,0.1); }
+        .tabs { display: flex; background: var(--sec-bg); position: sticky; top: 0; z-index: 10; border-bottom: 1px solid rgba(0,0,0,0.1); }
         .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; }
         .tab.active { border-bottom: 2px solid var(--btn); color: var(--btn); }
         .content { padding: 15px; display: none; }
         .content.active { display: block; }
-        .card { background: var(--sec-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.05); }
+        
+        .total-counter { 
+            background: var(--btn); color: var(--btn-text); 
+            padding: 12px; border-radius: 12px; text-align: center; 
+            font-weight: bold; font-size: 1.1em; margin-bottom: 15px; 
+        }
+
+        .card { background: var(--sec-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
         input { width: 100%; box-sizing: border-box; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ccc; background: var(--bg); color: var(--text); font-size: 16px; }
         button { background: var(--btn); color: var(--btn-text); border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .del { color: #ff4d4d; font-weight: bold; cursor: pointer; }
-        .status-msg { padding: 12px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; }
+        
+        .list-item { 
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px; background: var(--sec-bg); border-radius: 8px; margin-bottom: 8px;
+        }
+        .del-btn { color: #ff4d4d; font-size: 20px; font-weight: bold; padding-left: 15px; cursor: pointer; }
+        .status-msg { padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; margin-bottom: 15px; line-height: 1.4; }
     </style>
 </head>
 <body>
     <div class="tabs">
-        <div class="tab active" onclick="openTab('tab-pool')">💰 Каса</div>
+        <div class="tab active" onclick="openTab('tab-pool')">💰 Банк</div>
         <div class="tab" onclick="openTab('tab-spend')">🛒 Чеки</div>
         <div class="tab" onclick="openTab('tab-res')">🏁 Звіт</div>
     </div>
 
+    <!-- ВКЛАДКА БАНКУ -->
     <div id="tab-pool" class="content active">
+        <div id="pool-total-top" class="total-counter">Зібрано: 0.00 грн</div>
         <div class="card">
-            <input type="text" id="pName" placeholder="Ім'я">
-            <input type="number" id="pAmount" placeholder="Скільки здав?">
-            <button onclick="addP()">Додати в банк</button>
+            <input type="text" id="pName" placeholder="Хто здав?">
+            <input type="number" id="pAmount" placeholder="Сума">
+            <button onclick="addP()">Додати в касу</button>
         </div>
         <div id="p-list"></div>
     </div>
 
+    <!-- ВКЛАДКА ВИТРАТ -->
     <div id="tab-spend" class="content">
+        <div id="exp-total-top" class="total-counter" style="background: #e67e22;">Витрачено: 0.00 грн</div>
         <div class="card">
             <input type="text" id="eDesc" placeholder="Що купили?">
             <input type="number" id="eAmount" placeholder="Ціна">
-            <button onclick="addE()">Записати витрату</button>
+            <button onclick="addE()">Додати чек</button>
         </div>
         <div id="e-list"></div>
     </div>
 
+    <!-- ВКЛАДКА ПІДСУМКУ -->
     <div id="tab-res" class="content">
         <div id="res-header"></div>
         <div id="res-details"></div>
         <button onclick="sendData()" style="background: #28a745; margin-top: 15px;">Надіслати звіт у чат</button>
+        <button onclick="clearAll()" style="background: #666; margin-top: 15px; font-size: 12px; padding: 8px;">Очистити все</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        let pool = JSON.parse(localStorage.getItem('p_v9')) || [];
-        let exp = JSON.parse(localStorage.getItem('e_v9')) || [];
+        let pool = JSON.parse(localStorage.getItem('p_v10')) || [];
+        let exp = JSON.parse(localStorage.getItem('e_v10')) || [];
 
         function openTab(id) {
             document.querySelectorAll('.content, .tab').forEach(el => el.classList.remove('active'));
@@ -86,20 +103,33 @@
         }
 
         function save() {
-            localStorage.setItem('p_v9', JSON.stringify(pool));
-            localStorage.setItem('e_v9', JSON.stringify(exp));
+            localStorage.setItem('p_v10', JSON.stringify(pool));
+            localStorage.setItem('e_v10', JSON.stringify(exp));
         }
 
         function renderP() {
-            document.getElementById('p-list').innerHTML = pool.map((x, i) => `<div class="item"><span>${x.n}: ${x.a}</span><span class="del" onclick="delP(${i})">✕</span></div>`).join('');
+            let sum = pool.reduce((s, i) => s + i.a, 0);
+            document.getElementById('pool-total-top').innerText = `Зібрано: ${sum.toFixed(2)} грн`;
+            document.getElementById('p-list').innerHTML = pool.map((x, i) => `
+                <div class="list-item">
+                    <span><b>${x.n}</b>: ${x.a} грн</span>
+                    <span class="del-btn" onclick="delP(${i})">✕</span>
+                </div>`).join('');
         }
 
         function renderE() {
-            document.getElementById('e-list').innerHTML = exp.map((x, i) => `<div class="item"><span>${x.d}: ${x.a}</span><span class="del" onclick="delE(${i})">✕</span></div>`).join('');
+            let sum = exp.reduce((s, i) => s + i.a, 0);
+            document.getElementById('exp-total-top').innerText = `Витрачено: ${sum.toFixed(2)} грн`;
+            document.getElementById('e-list').innerHTML = exp.map((x, i) => `
+                <div class="list-item">
+                    <span><b>${x.d}</b>: ${x.a} грн</span>
+                    <span class="del-btn" onclick="delE(${i})">✕</span>
+                </div>`).join('');
         }
 
         function delP(i) { pool.splice(i, 1); save(); renderP(); }
         function delE(i) { exp.splice(i, 1); save(); renderE(); }
+        function clearAll() { if(confirm('Видалити всі дані?')) { pool=[]; exp=[]; save(); renderP(); renderE(); openTab('tab-pool'); } }
 
         function calculate() {
             let tin = pool.reduce((s, i) => s + i.a, 0);
@@ -110,18 +140,18 @@
 
             if (tin >= tout) {
                 let remains = tin - tout;
-                header.innerHTML = `<div class="status-msg" style="background:#e8f5e9">💰 Грошей вистачило! Решта: ${remains.toFixed(2)} грн</div>`;
+                header.innerHTML = `<div class="status-msg" style="background:#e8f5e9">✅ Грошей вистачило!<br>Решта в касі: ${remains.toFixed(2)} грн</div>`;
                 pool.forEach(x => {
                     let koef = tin > 0 ? (x.a / tin) : 0;
-                    let userBack = remains * koef;
-                    html += `<div class="card">👤 <b>${x.n}</b> (здав ${x.a})<br>Повернути йому: <b style="color:green">${userBack.toFixed(2)} грн</b></div>`;
+                    let back = remains * koef;
+                    html += `<div class="card">👤 <b>${x.n}</b> (здав ${x.a})<br>Повернути з решти: <b style="color:green">${back.toFixed(2)} грн</b></div>`;
                 });
             } else {
                 let debt = tout - tin;
                 let perPerson = pool.length > 0 ? (debt / pool.length) : 0;
-                header.innerHTML = `<div class="status-msg" style="background:#ffebee">⚠️ Перевищено ліміт! Треба додати: ${debt.toFixed(2)} грн</div>`;
+                header.innerHTML = `<div class="status-msg" style="background:#ffebee">⚠️ Грошей НЕ вистачило!<br>Треба докласти: ${debt.toFixed(2)} грн</div>`;
                 pool.forEach(x => {
-                    html += `<div class="card">👤 <b>${x.n}</b> (здав ${x.a})<br>Має доплатити порівну: <b style="color:red">${perPerson.toFixed(2)} грн</b></div>`;
+                    html += `<div class="card">👤 <b>${x.n}</b><br>Має доплатити порівну: <b style="color:red">${perPerson.toFixed(2)} грн</b></div>`;
                 });
             }
             details.innerHTML = html;
