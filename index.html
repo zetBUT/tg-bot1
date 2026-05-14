@@ -12,63 +12,122 @@
             --btn-text: var(--tg-theme-button-text-color, #ffffff);
             --sec-bg: var(--tg-theme-secondary-bg-color, #f4f4f4);
         }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 0; margin: 0; }
+        .tabs { display: flex; background: var(--sec-bg); sticky; top: 0; z-index: 10; }
+        .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; }
+        .tab.active { border-bottom: 2px solid var(--btn); color: var(--btn); }
+        .content { padding: 15px; display: none; }
+        .content.active { display: block; }
         .card { background: var(--sec-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.1); }
-        input { 
-            width: 100%; box-sizing: border-box; padding: 12px; margin: 5px 0; 
-            border-radius: 10px; border: 1px solid #ccc; background: var(--bg); color: var(--text); font-size: 16px;
-        }
-        button { background: var(--btn); color: var(--btn-text); border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .list-item { padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-        .desc { font-size: 13px; color: #888; display: block; margin-top: 2px; }
-        .del-btn { background: #ff4d4d; width: auto; padding: 6px 12px; font-size: 12px; }
-        .search-box { border: 2px solid var(--btn); margin-bottom: 20px; }
+        input { width: 100%; box-sizing: border-box; padding: 12px; margin: 5px 0; border-radius: 10px; border: 1px solid #ccc; background: var(--bg); color: var(--text); font-size: 16px; }
+        button { background: var(--btn); color: var(--btn-text); border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .list-item { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .del-btn { background: #ff4d4d; width: auto; padding: 5px 10px; font-size: 12px; }
+        .payment-line { padding: 10px; margin: 5px 0; background: rgba(40, 167, 69, 0.1); border-radius: 8px; border-left: 4px solid #28a745; }
+        .debt-line { padding: 10px; margin: 5px 0; background: rgba(220, 53, 69, 0.1); border-radius: 8px; border-left: 4px solid #dc3545; }
     </style>
 </head>
 <body>
-    <h3>🛍 Менеджер витрат</h3>
-    <input type="text" id="search" class="search-box" placeholder="🔍 Пошук..." oninput="render()">
-    <div class="card">
-        <input type="text" id="userName" placeholder="Хто платив?">
-        <input type="number" id="userAmount" placeholder="Сума">
-        <input type="text" id="userDesc" placeholder="За що?">
-        <button onclick="addNew()">➕ Додати</button>
+    <div class="tabs">
+        <div class="tab active" onclick="openTab('tab-input')">➕ Витрати</div>
+        <div class="tab" onclick="openTab('tab-calc')">💰 Розрахунок</div>
     </div>
-    <div id="list-container"></div>
-    <button style="margin-top: 20px; background: #28a745;" onclick="sendToBot()">✅ Сформувати план виплат</button>
+
+    <!-- ВКЛАДКА 1: ВВЕДЕННЯ ДАНИХ -->
+    <div id="tab-input" class="content active">
+        <input type="text" id="search" placeholder="🔍 Пошук..." oninput="renderAll()">
+        <div class="card">
+            <input type="text" id="userName" placeholder="Хто платив?">
+            <input type="number" id="userAmount" placeholder="Сума">
+            <input type="text" id="userDesc" placeholder="За що?">
+            <button onclick="addNew()">Додати у список</button>
+        </div>
+        <div id="list-container"></div>
+    </div>
+
+    <!-- ВКЛАДКА 2: РОЗРАХУНОК -->
+    <div id="tab-calc" class="content">
+        <div class="card" id="summary-card">
+            <p>Всього: <b id="total-val">0</b> грн</p>
+            <p>На кожного: <b id="avg-val">0</b> грн</p>
+        </div>
+        <h4>Хто і кому має передати:</h4>
+        <div id="payment-plan"></div>
+        <button onclick="sendToBot()" style="background: #28a745;">Надіслати звіт у чат</button>
+    </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        tg.expand();
-        let items = JSON.parse(localStorage.getItem('trip_v3')) || [];
+        let items = JSON.parse(localStorage.getItem('trip_v4')) || [];
 
-        function render() {
-            const container = document.getElementById('list-container');
-            const query = document.getElementById('search').value.toLowerCase();
-            container.innerHTML = '';
-            items.filter(i => i.name.toLowerCase().includes(query) || i.desc.toLowerCase().includes(query))
-                 .forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = 'list-item';
-                div.innerHTML = `<div><strong>${item.name}</strong>: ${item.amount} грн<span class="desc">📝 ${item.desc}</span></div>
-                                 <button class="del-btn" onclick="remove(${index})">видалити</button>`;
-                container.appendChild(div);
-            });
+        function openTab(id) {
+            document.querySelectorAll('.content, .tab').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.currentTarget.classList.add('active');
+            if(id === 'tab-calc') calculateDebts();
         }
 
         function addNew() {
             const n = document.getElementById('userName'), a = document.getElementById('userAmount'), d = document.getElementById('userDesc');
             if(n.value && a.value) {
-                items.push({ name: n.value, amount: parseFloat(a.value), desc: d.value || "Без опису" });
-                localStorage.setItem('trip_v3', JSON.stringify(items));
+                items.push({ name: n.value.trim(), amount: parseFloat(a.value), desc: d.value || "Без опису" });
+                localStorage.setItem('trip_v4', JSON.stringify(items));
                 n.value = ''; a.value = ''; d.value = '';
-                render();
+                renderAll();
             }
         }
 
-        function remove(idx) { items.splice(idx, 1); localStorage.setItem('trip_v3', JSON.stringify(items)); render(); }
+        function renderAll() {
+            const container = document.getElementById('list-container');
+            const query = document.getElementById('search').value.toLowerCase();
+            container.innerHTML = '';
+            items.filter(i => i.name.toLowerCase().includes(query) || i.desc.toLowerCase().includes(query)).forEach((item, index) => {
+                container.innerHTML += `<div class="list-item">
+                    <div><b>${item.name}</b>: ${item.amount} грн<br><small>${item.desc}</small></div>
+                    <button class="del-btn" onclick="remove(${index})">❌</button>
+                </div>`;
+            });
+        }
+
+        function remove(idx) { items.splice(idx, 1); localStorage.setItem('trip_v4', JSON.stringify(items)); renderAll(); }
+
+        function calculateDebts() {
+            const planDiv = document.getElementById('payment-plan');
+            if(items.length === 0) { planDiv.innerHTML = "Список порожній"; return; }
+
+            let balances = {};
+            let total = 0;
+            items.forEach(i => {
+                total += i.amount;
+                balances[i.name] = (balances[i.name] || 0) + i.amount;
+            });
+
+            let names = Object.keys(balances);
+            let avg = total / names.length;
+            document.getElementById('total-val').innerText = total.toFixed(2);
+            document.getElementById('avg-val').innerText = avg.toFixed(2);
+
+            let debtStatus = names.map(n => ({ name: n, status: balances[n] - avg }));
+            let debtors = debtStatus.filter(x => x.status < 0).sort((a,b) => a.status - b.status);
+            let creditors = debtStatus.filter(x => x.status > 0).sort((a,b) => b.status - a.status);
+
+            planDiv.innerHTML = '';
+            debtors.forEach(d => {
+                let dStatus = Math.abs(d.status);
+                creditors.forEach(c => {
+                    if(dStatus > 0 && c.status > 0) {
+                        let pay = Math.min(dStatus, c.status);
+                        planDiv.innerHTML += `<div class="payment-line"><b>${d.name}</b> ➔ <b>${c.name}</b>: ${pay.toFixed(2)} грн</div>`;
+                        dStatus -= pay;
+                        c.status -= pay;
+                    }
+                });
+            });
+            if(!planDiv.innerHTML) planDiv.innerHTML = "✅ Всі розрахувалися!";
+        }
+
         function sendToBot() { tg.sendData(JSON.stringify(items)); }
-        render();
+        renderAll();
     </script>
 </body>
 </html>
