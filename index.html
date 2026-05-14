@@ -1,91 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: sans-serif; background: var(--tg-theme-bg-color); color: var(--tg-theme-text-color); padding: 15px; margin: 0; }
-        .card { background: var(--tg-theme-secondary-bg-color); border-radius: 12px; padding: 12px; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.1); }
-        input { width: calc(100% - 24px); padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; }
-        button { background: var(--tg-theme-button-color); color: var(--tg-theme-button-text-color); border: none; padding: 12px; width: 100%; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .delete-btn { background: #ff4d4d; width: auto; padding: 5px 10px; font-size: 12px; float: right; }
-        #search { background: var(--tg-theme-bg-color); margin-bottom: 15px; border: 2px solid var(--tg-theme-button-color); }
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
+        :root {
+            --bg: var(--tg-theme-bg-color, #ffffff);
+            --text: var(--tg-theme-text-color, #000000);
+            --hint: var(--tg-theme-hint-color, #999999);
+            --btn: var(--tg-theme-button-color, #2481cc);
+            --btn-text: var(--tg-theme-button-text-color, #ffffff);
+            --sec-bg: var(--tg-theme-secondary-bg-color, #f4f4f4);
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
+        .card { background: var(--sec-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        input { 
+            width: 100%; box-sizing: border-box; padding: 12px; margin: 8px 0; 
+            border-radius: 10px; border: 1px solid #ccc; font-size: 16px; 
+            background: var(--bg); color: var(--text);
+        }
+        button { 
+            background: var(--btn); color: var(--btn-text); border: none; 
+            padding: 14px; width: 100%; border-radius: 10px; font-weight: 600; cursor: pointer; 
+        }
+        .search-box { border: 2px solid var(--btn); margin-bottom: 20px; }
+        .list-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.1); 
+        }
+        .del-btn { background: #ff4d4d; width: auto; padding: 6px 12px; font-size: 13px; }
+        h3, h4 { margin-top: 0; }
     </style>
 </head>
 <body>
-    <h3>💰 Менеджер витрат</h3>
+    <h3>📊 Менеджер витрат</h3>
     
-    <!-- Поле пошуку -->
-    <input type="text" id="search" placeholder="🔍 Пошук по імені..." oninput="renderList()">
+    <!-- ПОШУК -->
+    <input type="text" id="search" class="search-box" placeholder="🔍 Швидкий пошук за іменем..." oninput="render()">
 
+    <!-- ДОДАВАННЯ (БЕЗ СТИРАННЯ СТАРОГО) -->
     <div class="card">
         <h4>Додати нову витрату</h4>
-        <input type="text" id="name" placeholder="Хто платив?">
-        <input type="number" id="amount" placeholder="Сума">
-        <button onclick="addExpense()">➕ Додати у список</button>
+        <input type="text" id="userName" placeholder="Ім'я (напр. Олег)">
+        <input type="number" id="userAmount" placeholder="Сума (напр. 500)">
+        <button onclick="addNew()">➕ Додати у список</button>
     </div>
 
-    <div id="expense-list"></div>
+    <div id="list-container"></div>
 
-    <button style="margin-top: 20px; background: #28a745;" onclick="sendDataToBot()">🚀 Розрахувати борги в боті</button>
+    <!-- ВІДПРАВКА В БОТ -->
+    <button style="margin-top: 20px; background: #28a745;" onclick="sendToBot()">✅ Розрахувати в Telegram</button>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Завантажуємо збережені дані або створюємо порожній список
-        let expenses = JSON.parse(localStorage.getItem('my_expenses')) || [];
+        // Завантаження збережених даних, щоб нічого не зникало
+        let items = JSON.parse(localStorage.getItem('trip_data')) || [];
 
-        function renderList() {
-            const listDiv = document.getElementById('expense-list');
-            const searchTerm = document.getElementById('search').value.toLowerCase();
-            listDiv.innerHTML = '';
+        function render() {
+            const container = document.getElementById('list-container');
+            const query = document.getElementById('search').value.toLowerCase();
+            container.innerHTML = '';
 
-            expenses.filter(item => item.name.toLowerCase().includes(searchTerm))
-                    .forEach((item, index) => {
-                listDiv.innerHTML += `
-                    <div class="list-item">
-                        <span><strong>${item.name}</strong>: ${item.amount} грн</span>
-                        <button class="delete-btn" onclick="deleteExpense(${index})">видалити</button>
-                    </div>`;
+            const filtered = items.filter(i => i.name.toLowerCase().includes(query));
+
+            filtered.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.innerHTML = `
+                    <span><strong>${item.name}</strong>: ${item.amount} грн</span>
+                    <button class="del-btn" onclick="remove(${index})">видалити</button>
+                `;
+                container.appendChild(div);
             });
         }
 
-        function addExpense() {
-            const nameInput = document.getElementById('name');
-            const amountInput = document.getElementById('amount');
-            
-            if(nameInput.value && amountInput.value) {
-                expenses.push({ name: nameInput.value, amount: parseFloat(amountInput.value) });
-                localStorage.setItem('my_expenses', JSON.stringify(expenses));
+        function addNew() {
+            const n = document.getElementById('userName');
+            const a = document.getElementById('userAmount');
+
+            if(n.value.trim() && a.value) {
+                items.push({ name: n.value.trim(), amount: parseFloat(a.value) });
+                localStorage.setItem('trip_data', JSON.stringify(items));
                 
-                // ОЧИЩЕННЯ ПОЛІВ (щоб не стерти старе, а просто вписати нове)
-                nameInput.value = '';
-                amountInput.value = '';
+                // ОЧИЩЕННЯ ПОЛІВ: тепер ти просто вводиш наступне
+                n.value = '';
+                a.value = '';
+                n.focus();
                 
-                renderList();
+                render();
             }
         }
 
-        function deleteExpense(index) {
-            expenses.splice(index, 1);
-            localStorage.setItem('my_expenses', JSON.stringify(expenses));
-            renderList();
+        function remove(idx) {
+            items.splice(idx, 1);
+            localStorage.setItem('trip_data', JSON.stringify(items));
+            render();
         }
 
-        function sendDataToBot() {
-            if(expenses.length === 0) {
-                tg.showAlert("Додайте хоча б одну витрату!");
-                return;
-            }
-            tg.sendData(JSON.stringify(expenses));
-            // Очищаємо список після відправки, якщо хочеш почати новий розрахунок
-            // localStorage.removeItem('my_expenses'); 
+        function sendToBot() {
+            if(items.length === 0) return tg.showAlert("Список порожній!");
+            tg.sendData(JSON.stringify(items));
         }
 
-        renderList(); // Початкове відображення
+        render();
     </script>
 </body>
 </html>
