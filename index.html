@@ -13,70 +13,60 @@
             --sec-bg: var(--tg-theme-secondary-bg-color, #f4f4f4);
         }
         body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; }
-        .card { background: var(--sec-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .card { background: var(--sec-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.1); }
         input { 
             width: 100%; box-sizing: border-box; padding: 12px; margin: 5px 0; 
-            border-radius: 10px; border: 1px solid #ccc; background: var(--bg); color: var(--text);
+            border-radius: 10px; border: 1px solid #ccc; background: var(--bg); color: var(--text); font-size: 16px;
         }
         button { background: var(--btn); color: var(--btn-text); border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .list-item { padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
-        .desc { font-size: 13px; color: var(--tg-theme-hint-color, #888); display: block; }
-        .del-btn { background: #ff4d4d; width: auto; padding: 5px 10px; font-size: 12px; }
+        .list-item { padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .desc { font-size: 13px; color: #888; display: block; margin-top: 2px; }
+        .del-btn { background: #ff4d4d; width: auto; padding: 6px 12px; font-size: 12px; }
+        .search-box { border: 2px solid var(--btn); margin-bottom: 20px; }
     </style>
 </head>
 <body>
     <h3>🛍 Менеджер витрат</h3>
-    
-    <input type="text" id="search" placeholder="🔍 Пошук..." oninput="render()">
-
+    <input type="text" id="search" class="search-box" placeholder="🔍 Пошук..." oninput="render()">
     <div class="card">
         <input type="text" id="userName" placeholder="Хто платив?">
         <input type="number" id="userAmount" placeholder="Сума">
-        <input type="text" id="userDesc" placeholder="За що? (напр. Продукти)">
+        <input type="text" id="userDesc" placeholder="За що?">
         <button onclick="addNew()">➕ Додати</button>
     </div>
-
     <div id="list-container"></div>
-    <button style="margin-top: 20px; background: #28a745;" onclick="sendToBot()">✅ Розрахувати борги</button>
+    <button style="margin-top: 20px; background: #28a745;" onclick="sendToBot()">✅ Сформувати план виплат</button>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
-        let items = JSON.parse(localStorage.getItem('trip_v2')) || [];
+        let items = JSON.parse(localStorage.getItem('trip_v3')) || [];
 
         function render() {
             const container = document.getElementById('list-container');
             const query = document.getElementById('search').value.toLowerCase();
             container.innerHTML = '';
             items.filter(i => i.name.toLowerCase().includes(query) || i.desc.toLowerCase().includes(query))
-                   .forEach((item, index) => {
+                 .forEach((item, index) => {
                 const div = document.createElement('div');
                 div.className = 'list-item';
-                div.innerHTML = `
-                    <div>
-                        <strong>${item.name}</strong>: ${item.amount} грн
-                        <span class="desc">📝 ${item.desc}</span>
-                    </div>
-                    <button class="del-btn" onclick="remove(${index})">видалити</button>
-                `;
+                div.innerHTML = `<div><strong>${item.name}</strong>: ${item.amount} грн<span class="desc">📝 ${item.desc}</span></div>
+                                 <button class="del-btn" onclick="remove(${index})">видалити</button>`;
                 container.appendChild(div);
             });
         }
 
         function addNew() {
-            const n = document.getElementById('userName');
-            const a = document.getElementById('userAmount');
-            const d = document.getElementById('userDesc');
-
+            const n = document.getElementById('userName'), a = document.getElementById('userAmount'), d = document.getElementById('userDesc');
             if(n.value && a.value) {
                 items.push({ name: n.value, amount: parseFloat(a.value), desc: d.value || "Без опису" });
-                localStorage.setItem('trip_v2', JSON.stringify(items));
-                n.value = ''; a.value = ''; d.value = ''; // Очищення полів
+                localStorage.setItem('trip_v3', JSON.stringify(items));
+                n.value = ''; a.value = ''; d.value = '';
                 render();
             }
         }
 
-        function remove(idx) { items.splice(idx, 1); localStorage.setItem('trip_v2', JSON.stringify(items)); render(); }
+        function remove(idx) { items.splice(idx, 1); localStorage.setItem('trip_v3', JSON.stringify(items)); render(); }
         function sendToBot() { tg.sendData(JSON.stringify(items)); }
         render();
     </script>
