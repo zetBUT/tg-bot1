@@ -13,60 +13,59 @@
             --sec-bg: var(--tg-theme-secondary-bg-color, #f4f4f4);
         }
         body { font-family: sans-serif; background: var(--bg); color: var(--text); padding: 0; margin: 0; }
-        .tabs { display: flex; background: var(--sec-bg); position: sticky; top: 0; z-index: 10; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        .tabs { display: flex; background: var(--sec-bg); border-bottom: 1px solid rgba(0,0,0,0.1); }
         .tab { flex: 1; padding: 15px; text-align: center; cursor: pointer; border-bottom: 2px solid transparent; font-weight: bold; }
         .tab.active { border-bottom: 2px solid var(--btn); color: var(--btn); }
         .content { padding: 15px; display: none; }
         .content.active { display: block; }
-        .card { background: var(--sec-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.05); }
-        input { width: 100%; box-sizing: border-box; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ccc; background: var(--bg); color: var(--text); font-size: 16px; }
-        button { background: var(--btn); color: var(--btn-text); border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .card { background: var(--sec-bg); border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        input { width: 100%; box-sizing: border-box; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ccc; background: var(--bg); color: var(--text); }
+        button { background: var(--btn); color: var(--btn-text); border: none; padding: 14px; width: 100%; border-radius: 10px; font-weight: bold; }
         .item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.05); }
-        .del { color: #ff4d4d; font-weight: bold; cursor: pointer; }
-        .summary-badge { padding: 10px; border-radius: 10px; margin-bottom: 15px; text-align: center; font-weight: bold; }
+        .res-msg { padding: 10px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; text-align: center; }
     </style>
 </head>
 <body>
     <div class="tabs">
-        <div class="tab active" onclick="openTab('tab-pool')">💰 Банк</div>
-        <div class="tab" onclick="openTab('tab-spend')">🛒 Чеки</div>
-        <div class="tab" onclick="openTab('tab-res')">🏁 Звіт</div>
+        <div class="tab active" onclick="openTab('tab-pool')">💰 Скидаємось</div>
+        <div class="tab" onclick="openTab('tab-spend')">🛒 Витрати</div>
+        <div class="tab" onclick="openTab('tab-res')">🏁 Підсумок</div>
     </div>
 
     <div id="tab-pool" class="content active">
         <div class="card">
             <input type="text" id="pName" placeholder="Ім'я">
-            <input type="number" id="pAmount" placeholder="Скільки здав?">
-            <button onclick="addP()">Додати в касу</button>
+            <input type="number" id="pAmount" placeholder="Сума">
+            <button onclick="addP()">В касу</button>
         </div>
         <div id="p-list"></div>
     </div>
 
     <div id="tab-spend" class="content">
         <div class="card">
-            <input type="text" id="eDesc" placeholder="Що купили?">
+            <input type="text" id="eDesc" placeholder="На що?">
             <input type="number" id="eAmount" placeholder="Ціна">
-            <button onclick="addE()">Додати витрату</button>
+            <button onclick="addE()">Додати чек</button>
         </div>
         <div id="e-list"></div>
     </div>
 
     <div id="tab-res" class="content">
-        <div id="final-stats"></div>
-        <div id="final-details"></div>
-        <button onclick="sendToBot()" style="background: #28a745; margin-top: 15px;">Надіслати в чат</button>
+        <div id="res-header"></div>
+        <div id="res-details"></div>
+        <button onclick="send()" style="background: #28a745; margin-top: 15px;">Надіслати звіт</button>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        let pool = JSON.parse(localStorage.getItem('p_v8')) || [];
-        let exp = JSON.parse(localStorage.getItem('e_v8')) || [];
+        let pool = JSON.parse(localStorage.getItem('p_v9')) || [];
+        let exp = JSON.parse(localStorage.getItem('e_v9')) || [];
 
         function openTab(id) {
             document.querySelectorAll('.content, .tab').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
             event.currentTarget.classList.add('active');
-            if(id === 'tab-res') updateRes();
+            if(id === 'tab-res') calculate();
         }
 
         function addP() {
@@ -86,50 +85,47 @@
         }
 
         function save() {
-            localStorage.setItem('p_v8', JSON.stringify(pool));
-            localStorage.setItem('e_v8', JSON.stringify(exp));
+            localStorage.setItem('p_v9', JSON.stringify(pool));
+            localStorage.setItem('e_v9', JSON.stringify(exp));
         }
 
         function renderP() {
-            document.getElementById('p-list').innerHTML = pool.map((x, i) => `<div class="item"><span>${x.n}: ${x.a}</span><span class="del" onclick="delP(${i})">✕</span></div>`).join('');
+            document.getElementById('p-list').innerHTML = pool.map((x, i) => `<div class="item">${x.n}: ${x.a}</div>`).join('');
         }
 
         function renderE() {
-            document.getElementById('e-list').innerHTML = exp.map((x, i) => `<div class="item"><span>${x.d}: ${x.a}</span><span class="del" onclick="delE(${i})">✕</span></div>`).join('');
+            document.getElementById('e-list').innerHTML = exp.map((x, i) => `<div class="item">${x.d}: ${x.a}</div>`).join('');
         }
 
-        function delP(i) { pool.splice(i, 1); save(); renderP(); }
-        function delE(i) { exp.splice(i, 1); save(); renderE(); }
-
-        function updateRes() {
+        function calculate() {
             let tin = pool.reduce((s, i) => s + i.a, 0);
             let tout = exp.reduce((s, i) => s + i.a, 0);
-            let avg = pool.length ? (tout / pool.length) : 0;
-            let diff_total = tin - tout;
-
-            let badgeColor = diff_total >= 0 ? "#e8f5e9" : "#ffebee";
-            let badgeText = diff_total >= 0 
-                ? `💰 Решта: <b>${diff_total.toFixed(2)} грн</b>` 
-                : `⚠️ Не вистачило: <b>${Math.abs(diff_total).toFixed(2)} грн</b>`;
-
-            document.getElementById('final-stats').innerHTML = `
-                <div class="summary-badge" style="background: ${badgeColor}; color: #333;">
-                    Зібрано: ${tin.toFixed(2)} | Витрачено: ${tout.toFixed(2)}<br>${badgeText}
-                </div>
-            `;
-
+            let header = document.getElementById('res-header');
+            let details = document.getElementById('res-details');
             let html = "";
-            pool.forEach(x => {
-                let user_diff = x.a - avg;
-                let status = user_diff >= 0 
-                    ? `<span style="color:green">Віддати йому: <b>${user_diff.toFixed(2)}</b></span>`
-                    : `<span style="color:red">Має докласти: <b>${Math.abs(user_diff).toFixed(2)}</b></span>`;
-                html += `<div class="card"><b>${x.n}</b> (здав ${x.a})<br>${status}</div>`;
-            });
-            document.getElementById('final-details').innerHTML = html;
+
+            if (tin >= tout) {
+                // СЦЕНАРІЙ 1: ГРОШЕЙ ВИСТАЧИЛО (РЕШТА ПО КОЕФІЦІЄНТАМ)
+                let remains = tin - tout;
+                header.innerHTML = `<div class="res-msg" style="background:#e8f5e9">💰 Решта: ${remains.toFixed(2)} грн</div>`;
+                pool.forEach(x => {
+                    let koef = x.a / tin; // Частка людини в банку
+                    let userRemains = remains * koef;
+                    html += `<div class="card"><b>${x.n}</b><br>Повернути з решти: <b style="color:green">${userRemains.toFixed(2)} грн</b></div>`;
+                });
+            } else {
+                // СЦЕНАРІЙ 2: ПЕРЕВИЩИЛИ ЛІМІТ (ДОПЛАТА ПОРІВНУ)
+                let debt = tout - tin;
+                let perPerson = debt / pool.length;
+                header.innerHTML = `<div class="res-msg" style="background:#ffebee">⚠️ Не вистачило: ${debt.toFixed(2)} грн</div>`;
+                pool.forEach(x => {
+                    html += `<div class="card"><b>${x.n}</b><br>Має доплатити порівну: <b style="color:red">${perPerson.toFixed(2)} грн</b></div>`;
+                });
+            }
+            details.innerHTML = html;
         }
 
-        function sendToBot() { tg.sendData(JSON.stringify({p: pool, e: exp})); }
+        function send() { tg.sendData(JSON.stringify({p: pool, e: exp})); }
         renderP(); renderE();
     </script>
 </body>
